@@ -33,3 +33,7 @@ values (uuid_generate_v3(uuid_ns_url(),'module_1'),uuid_generate_v3(uuid_ns_url(
 
 insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission)
 values (uuid_generate_v3(uuid_ns_url(),'exercise_1'),uuid_generate_v3(uuid_ns_url(),'assistant_1'),true,true,true,true);
+
+
+insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission)
+values (uuid_generate_v3(uuid_ns_url(),'module_1'),uuid_generate_v3(uuid_ns_url(),'assistant_1'),true,true,false,false);

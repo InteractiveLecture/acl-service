@@ -11,7 +11,6 @@ drop table if exists object_identities cascade;
 drop table if exists acl_entries cascade;
 
 create table object_identities (
-  object_class varchar(500) not null,
   id UUID PRIMARY KEY,
   parent_object UUID,
   owner_sid UUID not null,
