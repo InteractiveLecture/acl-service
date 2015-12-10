@@ -10,8 +10,6 @@ import (
 	"github.com/InteractiveLecture/id-extractor"
 	"github.com/InteractiveLecture/middlewares/jwtware"
 	"github.com/InteractiveLecture/pgmapper"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 )
 
@@ -34,15 +32,13 @@ func main() {
 
 func addObjectHandler(mapper *pgmapper.Mapper) http.Handler {
 	result := func(w http.ResponseWriter, r *http.Request) {
-		user := context.Get(r, "user")
-		userId := user.(*jwt.Token).Claims["id"]
 		entity := make(map[string]interface{})
 		err := json.NewDecoder(r.Body).Decode(&entity)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = mapper.Execute("insert into object_identities(id,parent_object,owner) values(%v)", entity["id"], entity["parent"], userId)
+		err = mapper.Execute("insert into object_identities(id,parent_object,owner) values(%v)", entity["id"], entity["parent"])
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 		}

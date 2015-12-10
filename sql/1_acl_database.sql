@@ -13,7 +13,6 @@ drop table if exists acl_entries cascade;
 create table object_identities (
   id UUID PRIMARY KEY,
   parent_object UUID,
-  owner_sid UUID not null,
   constraint fk_acl_obj_parent foreign key(parent_object)references object_identities(id)
 );
 
