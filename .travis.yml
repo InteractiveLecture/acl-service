@@ -1,13 +1,9 @@
 sudo: required
-
 services:
     - docker
-
 language: go
-
 go:
   - 1.5
-
 install:
   - go get github.com/InteractiveLecture/id-extractor
   - go get github.com/InteractiveLecture/middlewares/jwtware
@@ -15,8 +11,8 @@ install:
   - go get github.com/gorilla/mux
 
 script:
+  - ls
   - chmod +x build.sh && sh build.sh
-
 deploy:
   - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" 
   - docker push openservice/acl-service:latest
