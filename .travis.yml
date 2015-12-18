@@ -3,6 +3,11 @@ sudo: required
 services:
     - docker
 
+language: go
+
+go:
+  - 1.5
+
 script:
   - chmod +x build.sh && sh build.sh
 
