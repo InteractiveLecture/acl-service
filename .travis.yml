@@ -8,6 +8,12 @@ language: go
 go:
   - 1.5
 
+install:
+  - go get github.com/InteractiveLecture/id-extractor
+  - go get github.com/InteractiveLecture/middlewares/jwtware
+  - go get github.com/InteractiveLecture/pgmapper
+  - go get github.com/gorilla/mux
+
 script:
   - chmod +x build.sh && sh build.sh
 
