@@ -15,6 +15,6 @@ install:
 script:
   - ls
   - ./build.sh
-#deploy:
-#  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" 
-#  - docker push openservice/acl-service:latest
+deploy:
+  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" 
+  - docker push openservice/acl-service:latest
