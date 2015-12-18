@@ -3,6 +3,9 @@ sudo: required
 services:
     - docker
 
+script:
+  - ./build.sh
+
 deploy:
   - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" 
   - docker push openservice/acl-service:latest
