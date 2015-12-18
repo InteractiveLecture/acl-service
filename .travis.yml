@@ -17,5 +17,5 @@ script:
   - ./build.sh
     
 after_success:
-  - docker login --username "$DOCKER_USER" --password "$DOCKER_PASSWORD" 
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" -e="$DOCKER_EMAIL"
   - docker push openservice/acl-service:latest
