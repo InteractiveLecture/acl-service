@@ -1,0 +1,8 @@
+sudo: required
+
+services:
+    - docker
+
+deploy:
+  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" 
+  - docker push openservice/acl-service:latest
