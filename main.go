@@ -46,6 +46,17 @@ func addObjectHandler(mapper *pgmapper.Mapper) http.Handler {
 	return http.Handler(http.HandlerFunc(result))
 }
 
+func deleteMultipleObjectsHandler(mapper *pgmapper.Mapper) http.Handler {
+	result := func(w http.ResponseWriter, r *http.Request) {
+		ids, ok := r.URL.Query()["oid"]
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
+	}
+	return http.Handler(http.HandlerFunc(result))
+}
+
 func deleteObjectHandler(mapper *pgmapper.Mapper, extractor idextractor.Extractor) http.Handler {
 	result := func(w http.ResponseWriter, r *http.Request) {
 		objectId, err := extractor(r)
@@ -94,13 +105,19 @@ func upsertPermissionsHandler(mapper *pgmapper.Mapper, objectIdExtractor idextra
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		ids, ok := r.URL.Query()["sid"]
 		entity := make(map[string]interface{})
 		err = json.NewDecoder(r.Body).Decode(&entity)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = mapper.Execute("insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission) values($1,$2,$3,$4,$5,$6) ON CONFLICT (object_id,sid) UPDATE SET create_permission = $3, read_permission = $4, update_permission = $5, delete_permission = $6 where sid = $2 AND object_id = $1", objectId, entity["sid"], entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"])
+		if ok {
+			//TODO Database function missing
+			err = mapper.Execute("SELECT insert_bulk_permissions(%v)", objectId, entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"], ids)
+		} else {
+			err = mapper.Execute("insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission) values($1,$2,$3,$4,$5,$6) ON CONFLICT (object_id,sid) UPDATE SET create_permission = $3, read_permission = $4, update_permission = $5, delete_permission = $6 where sid = $2 AND object_id = $1", objectId, entity["sid"], entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"])
+		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
