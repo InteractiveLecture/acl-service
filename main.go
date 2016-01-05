@@ -26,6 +26,7 @@ func main() {
 	r.Methods("DELETE").Path("/objects/{objectId}").Handler(jwtware.New(deleteObjectHandler(mapper, objectIdExtractor)))
 	r.Methods("GET").Path("/objects/{objectId}/permissions/{userId}").Handler(jwtware.New(getPermissionsHandler(mapper, objectIdExtractor, userIdExtractor)))
 	r.Methods("PUT").Path("/objects/{objectId}/permissions").Handler(jwtware.New(upsertPermissionsHandler(mapper, objectIdExtractor)))
+	r.Methods("PUT").Path("/sids/{sid}/permissions").Handler(jwtware.New(upsertMultiplePermissionsHandler(mapper, idextractor.MuxIdExtractor("sid"))))
 	log.Println("listening on 8000")
 	http.ListenAndServe(":8000", r)
 }
@@ -52,7 +53,12 @@ func deleteMultipleObjectsHandler(mapper *pgmapper.Mapper) http.Handler {
 		if !ok {
 			w.WriteHeader(http.StatusBadRequest)
 		}
-
+		err := mapper.Execute("SELECT delete_objects(%v)", ids)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
 	}
 	return http.Handler(http.HandlerFunc(result))
 }
@@ -98,6 +104,35 @@ func getPermissionsHandler(mapper *pgmapper.Mapper, objectIdExtractor idextracto
 	return http.Handler(http.HandlerFunc(result))
 }
 
+func upsertMultiplePermissionsHandler(mapper *pgmapper.Mapper, sidIdExtractor idextractor.Extractor) http.Handler {
+	result := func(w http.ResponseWriter, r *http.Request) {
+		sid, err := sidIdExtractor(r)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		ids, ok := r.URL.Query()["oid"]
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		permissions := make(map[string]interface{})
+		err = json.NewDecoder(r.Body).Decode(&permissions)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = mapper.Execute("SELECT insert_bulk_sid_permissions(%v)", sid, permissions["create_permission"], permissions["read_permission"], permissions["update_permission"], permissions["delete_permission"], ids)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	return http.Handler(http.HandlerFunc(result))
+}
+
 func upsertPermissionsHandler(mapper *pgmapper.Mapper, objectIdExtractor idextractor.Extractor) http.Handler {
 	result := func(w http.ResponseWriter, r *http.Request) {
 		objectId, err := objectIdExtractor(r)
@@ -113,7 +148,6 @@ func upsertPermissionsHandler(mapper *pgmapper.Mapper, objectIdExtractor idextra
 			return
 		}
 		if ok {
-			//TODO Database function missing
 			err = mapper.Execute("SELECT insert_bulk_permissions(%v)", objectId, entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"], ids)
 		} else {
 			err = mapper.Execute("insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission) values($1,$2,$3,$4,$5,$6) ON CONFLICT (object_id,sid) UPDATE SET create_permission = $3, read_permission = $4, update_permission = $5, delete_permission = $6 where sid = $2 AND object_id = $1", objectId, entity["sid"], entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"])
