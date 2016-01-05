@@ -9,6 +9,7 @@ services:
 install:
   - go get github.com/InteractiveLecture/id-extractor
   - go get github.com/InteractiveLecture/middlewares/jwtware
+  - go get github.com/richterrettich/jsonpatch
   - go get github.com/InteractiveLecture/pgmapper
   - go get github.com/gorilla/mux
 
