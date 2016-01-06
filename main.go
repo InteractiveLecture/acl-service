@@ -27,8 +27,8 @@ func main() {
 	r.Methods("GET").Path("/objects/{objectId}/permissions/{userId}").Handler(jwtware.New(getPermissionsHandler(mapper, objectIdExtractor, userIdExtractor)))
 	r.Methods("PUT").Path("/objects/{objectId}/permissions").Handler(jwtware.New(upsertPermissionsHandler(mapper, objectIdExtractor)))
 	r.Methods("PUT").Path("/sids/{sid}/permissions").Handler(jwtware.New(upsertMultiplePermissionsHandler(mapper, idextractor.MuxIdExtractor("sid"))))
-	log.Println("listening on 8000")
-	http.ListenAndServe(":8000", r)
+	log.Println("listening on 8080")
+	http.ListenAndServe(":8080", r)
 }
 
 func addObjectHandler(mapper *pgmapper.Mapper) http.Handler {
