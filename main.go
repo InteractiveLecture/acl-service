@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"io"
 	"log"
 	"net/http"
@@ -14,8 +15,21 @@ import (
 )
 
 func main() {
-	r := mux.NewRouter()
+	dbHost := flag.String("dbhost", "localhost", "the database host")
+	dbPort := flag.Int("dbport", 5432, "the database port")
+	dbUser := flag.String("dbuser", "aclapp", "the database user")
+	dbSsl := flag.Bool("dbssl", false, "database ssl config")
+	dbName := flag.String("dbname", "acl", "the database name")
+	dbPassword := flag.String("dbpass", "", "database password")
+	flag.Parse()
 	config := pgmapper.DefaultConfig()
+	config.Host = *dbHost
+	config.Port = *dbPort
+	config.User = *dbUser
+	config.Ssl = *dbSsl
+	config.Database = *dbName
+	config.Password = *dbPassword
+	r := mux.NewRouter()
 	mapper, err := pgmapper.New(config)
 	if err != nil {
 		log.Fatal(err)
@@ -36,11 +50,13 @@ func addObjectHandler(mapper *pgmapper.Mapper) http.Handler {
 		entity := make(map[string]interface{})
 		err := json.NewDecoder(r.Body).Decode(&entity)
 		if err != nil {
+			log.Println("error while decoding json: ", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		err = mapper.Execute("insert into object_identities(id,parent_object,owner) values(%v)", entity["id"], entity["parent"])
+		err = mapper.Execute("insert into object_identities(id,parent_object) values(%v)", entity["id"], entity["parent"])
 		if err != nil {
+			log.Println("error while insertiing object into database: ", err)
 			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
@@ -150,7 +166,7 @@ func upsertPermissionsHandler(mapper *pgmapper.Mapper, objectIdExtractor idextra
 		if ok {
 			err = mapper.Execute("SELECT insert_bulk_permissions(%v)", objectId, entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"], ids)
 		} else {
-			err = mapper.Execute("insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission) values($1,$2,$3,$4,$5,$6) ON CONFLICT (object_id,sid) UPDATE SET create_permission = $3, read_permission = $4, update_permission = $5, delete_permission = $6 where sid = $2 AND object_id = $1", objectId, entity["sid"], entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"])
+			_, err = mapper.ExecuteRaw("insert into acl_entries(object_id,sid,create_permission,read_permission,update_permission,delete_permission) values($1,$2,$3,$4,$5,$6) ON CONFLICT (object_id,sid) DO UPDATE SET create_permission = $3, read_permission = $4, update_permission = $5, delete_permission = $6 where acl_entries.sid = $2 AND acl_entries.object_id = $1", objectId, entity["sid"], entity["create_permission"], entity["read_permission"], entity["update_permission"], entity["delete_permission"])
 		}
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
